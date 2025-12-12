@@ -1,0 +1,11 @@
+staging_project_id = "lil-onboard-gcp"
+prod_project_id = "lil-onboard-gcp"
+cicd_runner_project_id = "lil-onboard-gcp"
+region = "europe-west1"
+repository_name = "portefolio-manager-adk"
+repository_owner = "kaligautier"
+host_connection_name = "git-portefolio-manager-adk"
+create_cb_connection = true
+create_repository = false
+github_app_installation_id = "99098144"
+github_pat_secret_id = "git-portefolio-manager-adk-github-oauthtoken-82dcee"
