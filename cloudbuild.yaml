@@ -14,6 +14,19 @@ steps:
         chmod +x init.sh
         ./init.sh ${PROJECT_ID}
 
+  # Build Docker image     
+  - id: 'docker-build'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:$SHORT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:latest'
+      - '--build-arg'
+      - 'COMMIT_SHA=$SHORT_SHA'
+      - '.'
+
   # Terraform init
   - id: 'terraform-init'
     name: 'hashicorp/terraform:1.14.1'
@@ -44,6 +57,58 @@ steps:
         cd iac
         terraform apply -input=false -no-color -auto-approve changes.tfplan
 
+  # Push Docker image to Artifact Registry
+  - id: 'docker-push'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager'
+    waitFor: ['docker-build']
+
+  # Deploy to Cloud Run
+  - id: 'cloud-run-deploy'
+    name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:$SHORT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--port'
+      - '8080'
+      - '--service-account'
+      - '${_SERVICE_ACCOUNT}'
+      - '--allow-unauthenticated'
+    waitFor: ['docker-push']
+
+  # Display deployment info
+  - id: 'deployment-info'
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "================================"
+        echo "Deployment completed successfully"
+        echo "================================"
+        SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} --region=${_REGION} --format='value(status.url)')
+        echo "Service URL: $$SERVICE_URL"
+        echo "Image: ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:$SHORT_SHA"
+        echo "Port: 8080"
+        echo "================================"
+    waitFor: ['cloud-run-deploy']
+
 timeout: 5400s
 options:
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _REGION: europe-west1
+  _REPOSITORY: porte-folio-manager-repo
+  _SERVICE_NAME: portfolio-manager
+  _SERVICE_ACCOUNT: porte-folio-manager-sa@${PROJECT_ID}.iam.gserviceaccount.com
