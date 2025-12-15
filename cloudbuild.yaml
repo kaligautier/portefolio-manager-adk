@@ -21,8 +21,6 @@ steps:
       - 'build'
       - '-t'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:$SHORT_SHA'
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:latest'
       - '--build-arg'
       - 'COMMIT_SHA=$SHORT_SHA'
       - '.'
