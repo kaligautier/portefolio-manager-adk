@@ -40,3 +40,13 @@ def create_bucket_if_not_exists(bucket_name: str, project: str, location: str) -
             project=project,
         )
         logging.info(f"Created bucket {bucket.name} in {bucket.location}")
+    except exceptions.Forbidden as e:
+        logging.warning(
+            f"Insufficient permissions to access bucket {bucket_name}. "
+            f"App will continue without bucket: {e}"
+        )
+    except Exception as e:
+        logging.warning(
+            f"Failed to create or access bucket {bucket_name}. "
+            f"App will continue without bucket: {e}"
+        )
