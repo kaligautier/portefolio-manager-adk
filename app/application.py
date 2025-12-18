@@ -14,29 +14,23 @@ logger = logging.getLogger(__name__)
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application instance."""
 
-    # Configure session service based on settings
     session_service_uri = None
     if settings.USE_AGENT_ENGINE_SESSIONS and settings.AGENT_ENGINE_ID:
-        # Use Vertex AI Agent Engine Sessions (fully managed on GCP)
         session_service_uri = f"agentengine://{settings.AGENT_ENGINE_ID}"
         logger.info(f"Using Vertex AI Agent Engine Sessions: {settings.AGENT_ENGINE_ID}")
     else:
-        # Use InMemorySessionService (default for development)
         logger.info("Using InMemorySessionService (sessions not persisted)")
 
-    # Create FastAPI app with ADK integration
     app: FastAPI = get_fast_api_app(
         agents_dir=settings.AGENT_DIR,
         web=True,  # Enable web UI
         session_service_uri=session_service_uri,
     )
 
-    # Set application metadata
     app.title = settings.APP_NAME
     app.description = settings.APP_DESCRIPTION
     app.version = settings.APP_VERSION
 
-    # Add custom health check endpoint
     @app.get("/health", tags=["Health"], summary="Health Check")
     async def health_check():
         """
