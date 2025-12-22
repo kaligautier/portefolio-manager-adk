@@ -14,16 +14,33 @@ steps:
         chmod +x init.sh
         ./init.sh ${PROJECT_ID}
 
-  # Build Docker image     
-  - id: 'docker-build'
+  # Build Docker image - Portfolio Manager App
+  - id: 'docker-build-app'
     name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:$SHORT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:latest'
       - '--build-arg'
       - 'COMMIT_SHA=$SHORT_SHA'
       - '.'
+    waitFor: ['project-init']
+
+  # Build Docker image - IB MCP Server
+  - id: 'docker-build-mcp'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/ib-mcp-server:$SHORT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/ib-mcp-server:latest'
+      - '-f'
+      - './mcp_server/Dockerfile'
+      - './mcp_server'
+    waitFor: ['project-init']
 
   # Terraform init
   - id: 'terraform-init'
@@ -55,17 +72,25 @@ steps:
         cd iac
         terraform apply -input=false -no-color -auto-approve changes.tfplan
 
-  # Push Docker image to Artifact Registry
-  - id: 'docker-push'
+  # Push Docker images to Artifact Registry
+  - id: 'docker-push-app'
     name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
       - '--all-tags'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager'
-    waitFor: ['docker-build']
+    waitFor: ['docker-build-app']
 
-  # Deploy to Cloud Run
-  - id: 'cloud-run-deploy'
+  - id: 'docker-push-mcp'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/ib-mcp-server'
+    waitFor: ['docker-build-mcp']
+
+  # Deploy Portfolio Manager App to Cloud Run
+  - id: 'cloud-run-deploy-app'
     name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
@@ -82,7 +107,27 @@ steps:
       - '--service-account'
       - '${_SERVICE_ACCOUNT}'
       - '--allow-unauthenticated'
-    waitFor: ['docker-push']
+    waitFor: ['docker-push-app']
+
+  # Deploy IB MCP Server to Cloud Run
+  - id: 'cloud-run-deploy-mcp'
+    name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_MCP_SERVICE_NAME}'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/ib-mcp-server:$SHORT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--port'
+      - '${_MCP_SERVER_PORT}'
+      - '--service-account'
+      - '${_SERVICE_ACCOUNT}'
+      - '--no-allow-unauthenticated'
+    waitFor: ['docker-push-mcp']
 
   # Display deployment info
   - id: 'deployment-info'
@@ -91,15 +136,24 @@ steps:
     args:
       - '-c'
       - |
-        echo "================================"
+        echo "========================================"
         echo "Deployment completed successfully"
-        echo "================================"
-        SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} --region=${_REGION} --format='value(status.url)')
-        echo "Service URL: $$SERVICE_URL"
-        echo "Image: ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:$SHORT_SHA"
-        echo "Port: 8080"
-        echo "================================"
-    waitFor: ['cloud-run-deploy']
+        echo "========================================"
+        echo ""
+        echo "Portfolio Manager App:"
+        APP_URL=$(gcloud run services describe ${_SERVICE_NAME} --region=${_REGION} --format='value(status.url)')
+        echo "  Service URL: $$APP_URL"
+        echo "  Image: ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager:$SHORT_SHA"
+        echo "  Port: 8080"
+        echo ""
+        echo "IB MCP Server:"
+        MCP_URL=$(gcloud run services describe ${_MCP_SERVICE_NAME} --region=${_REGION} --format='value(status.url)')
+        echo "  Service URL: $$MCP_URL"
+        echo "  Image: ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/ib-mcp-server:$SHORT_SHA"
+        echo "  Port: ${_MCP_SERVER_PORT}"
+        echo ""
+        echo "========================================"
+    waitFor: ['cloud-run-deploy-app', 'cloud-run-deploy-mcp']
 
 timeout: 5400s
 options:
@@ -109,4 +163,6 @@ substitutions:
   _REGION: europe-west1
   _REPOSITORY: porte-folio-manager-repo
   _SERVICE_NAME: portfolio-manager
+  _MCP_SERVICE_NAME: ib-mcp-server
+  _MCP_SERVER_PORT: '8080'
   _SERVICE_ACCOUNT: porte-folio-manager-sa@${PROJECT_ID}.iam.gserviceaccount.com
