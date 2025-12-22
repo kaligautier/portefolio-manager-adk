@@ -10,9 +10,6 @@ from google.adk.agents import LlmAgent
 
 # Import all agents
 from app.components.agents.master_agent.agent import root_agent as master_agent
-from app.components.agents.brand_strategist.agent import root_agent as brand_strategist_agent
-from app.components.agents.social_director.agent import root_agent as social_director_agent
-from app.components.agents.brand_guardian.agent import root_agent as brand_guardian_agent
 from app.components.agents.google_search_agent.agent import root_agent as google_search_agent
 from app.components.agents.agent_with_bq_toolbox.agent import root_agent as agent_bq_with_mcp_toolbox
 from app.components.agents.agent_with_native_bq.agent import root_agent as agent_with_native_bq
@@ -28,11 +25,6 @@ from app.components.agents.seq_and_loop_agent.agent import root_agent as seq_and
 AGENTS_REGISTRY: Dict[str, LlmAgent] = {
     # Master orchestrator
     "master_agent": master_agent,
-
-    # Brand content agents (sub-agents of master)
-    "brand_strategist_agent": brand_strategist_agent,
-    "social_director_agent": social_director_agent,
-    "brand_guardian_agent": brand_guardian_agent,
 
     # Specialized agents
     "google_search_agent": google_search_agent,

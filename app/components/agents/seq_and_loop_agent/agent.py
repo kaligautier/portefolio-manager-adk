@@ -46,10 +46,7 @@ from google.adk.agents.sequential_agent import SequentialAgent
 from app.components.callbacks.after_agent import log_agent_end
 from app.components.callbacks.before_agent import log_agent_start
 from app.components.callbacks.tool_callbacks import log_after_tool, log_before_tool
-from app.config.constants import (
-    AGENT_SOCIAL_DIRECTOR_DESCRIPTION,
-    AGENT_SOCIAL_DIRECTOR_INSTRUCTION,
-)
+
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)

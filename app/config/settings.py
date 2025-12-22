@@ -100,6 +100,11 @@ class Settings(BaseSettings):
         description="Enable Vertex AI for Google Generative AI (required)",
     )
 
+    GOOGLE_API_KEY: str = Field(
+        default="",
+        description="Google Generative AI API key for non-Vertex AI authentication",
+    )
+
     GOOGLE_CLOUD_PROJECT: str = Field(
         default="lil-onboard-gcp",
         description="GCP project ID (required)",
@@ -166,6 +171,16 @@ class Settings(BaseSettings):
     TOOLBOX_BQ_TOOLSET: str = Field(
         default="bigquery_database_tools",
         description="Name of the BigQuery toolset to load from Toolbox server",
+    )
+
+    TOOLBOX_IBKR_URL: str = Field(
+        default="http://127.0.0.1:5002",  # Assuming a different port for IBKR MCP
+        description="Toolbox MCP server URL for IBKR tools",
+    )
+
+    TOOLBOX_IBKR_TOOLSET: str = Field(
+        default="ibkr_tools",
+        description="Name of the IBKR toolset to load from Toolbox server",
     )
 
     AGENT_ENGINE_ID: str = Field(

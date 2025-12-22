@@ -1,9 +1,10 @@
 from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 
 from app.components.callbacks.after_agent import log_agent_end
 from app.components.callbacks.before_agent import log_agent_start
 from app.components.callbacks.tool_callbacks import log_after_tool, log_before_tool
-from app.components.tools.custom.bigquery_toolset import bigquery_toolset
 from app.config.constants import (
     STOCK_PORTFOLIO_AGENT_DESCRIPTION,
     STOCK_PORTFOLIO_AGENT_INSTRUCTION,
@@ -15,7 +16,13 @@ root_agent = LlmAgent(
     model=settings.MODEL,
     instruction=STOCK_PORTFOLIO_AGENT_INSTRUCTION,
     description=STOCK_PORTFOLIO_AGENT_DESCRIPTION,
-    tools=[bigquery_toolset],
+    tools=[
+        McpToolset(
+            connection_params=StreamableHTTPConnectionParams(
+                url="http://localhost:5002/mcp"
+            )
+        )
+    ],
     before_agent_callback=log_agent_start,
     after_agent_callback=log_agent_end,
     before_tool_callback=log_before_tool,
