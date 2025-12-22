@@ -27,22 +27,12 @@ from app.components.agents.agent_with_vertex_ai_search.agent import (
 from app.components.agents.agent_with_vertex_rag.agent import (
     root_agent as agent_with_vertex_rag,
 )
-from app.components.agents.brand_guardian.agent import (
-    root_agent as brand_guardian_agent,
-)
-from app.components.agents.brand_strategist.agent import (
-    root_agent as brand_strategist_agent,
-)
 from app.components.agents.google_search_agent.agent import (
     root_agent as google_search_agent,
 )
-from app.components.agents.master_agent.agent import root_agent as master_agent
 from app.components.agents.parralel_agent.agent import root_agent as parallel_agent
 from app.components.agents.seq_and_loop_agent.agent import (
     root_agent as seq_and_loop_agent,
-)
-from app.components.agents.social_director.agent import (
-    root_agent as social_director_agent,
 )
 
 __all__ = [
@@ -53,8 +43,6 @@ __all__ = [
     "brand_guardian_agent",
     "brand_strategist_agent",
     "google_search_agent",
-    "master_agent",
     "parallel_agent",
     "seq_and_loop_agent",
-    "social_director_agent",
 ]

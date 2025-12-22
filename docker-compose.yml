@@ -2,17 +2,71 @@ version: '3.8'
 
 services:
   app:
+    container_name: app
     build:
       context: .
       dockerfile: Dockerfile
+    image: portfolio_manager_app:v0.1
     ports:
       - "8080:8080"
     env_file:
       - .env
     environment:
-      # Override specific env vars if needed
       - DOCKER_ENV=true
     volumes:
-      # Mount code for development (optional)
       - ./app:/code/app
+    networks:
+      - mcp_net
     restart: unless-stopped
+
+  # api_gateway:
+  #   container_name: api_gateway
+  #   build:
+  #     context: ./api_gateway
+  #     dockerfile: Dockerfile
+  #   image: ib_mcp_api_gateway:v0.1
+  #   ports:
+  #     - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - XX:XX
+  #   networks:
+  #     - mcp_net
+  #   volumes:
+  #     - ./api_gateway/conf.yaml:/app/api_gateway/root/conf.yaml
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "/usr/local/bin/healthcheck.sh"]
+  #     interval: 20s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 20s
+  #   restart: unless-stopped
+
+  mcp_server:
+    container_name: mcp_server
+    build:
+      context: ./mcp_server
+      dockerfile: Dockerfile
+    image: ib_mcp_mcp_server:v0.1
+    ports:
+      - "${MCP_SERVER_PORT}:${MCP_SERVER_PORT}"
+    env_file:
+      - .env
+    environment:
+      - ROUTERS_PATH=/app/mcp_server/routers
+    # depends_on:
+    #   api_gateway:
+    #     condition: service_healthy
+    networks:
+      - mcp_net
+    volumes:
+      - ./mcp_server:/app/mcp_server
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+networks:
+  mcp_net:
+    driver: bridge
+

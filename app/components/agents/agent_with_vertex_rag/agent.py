@@ -3,15 +3,6 @@ import logging
 
 from google.adk.agents import LlmAgent
 
-from app.components.agents.brand_guardian.agent import (
-    root_agent as brand_guardian_agent,
-)
-from app.components.agents.brand_strategist.agent import (
-    root_agent as brand_strategist_agent,
-)
-from app.components.agents.social_director.agent import (
-    root_agent as social_director_agent,
-)
 from app.components.callbacks.after_agent import log_agent_end
 from app.components.callbacks.before_agent import log_agent_start
 from app.components.callbacks.tool_callbacks import log_after_tool, log_before_tool

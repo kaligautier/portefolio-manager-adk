@@ -1,5 +1,7 @@
 from google.adk.agents import LlmAgent
 from google.adk.tools import google_search
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 
 from app.components.callbacks.after_agent import log_agent_end
 from app.components.callbacks.before_agent import log_agent_start
@@ -15,7 +17,14 @@ root_agent = LlmAgent(
     model=settings.MODEL,
     instruction=MARKET_SPECIALIST_AGENT_INSTRUCTION,
     description=MARKET_SPECIALIST_AGENT_DESCRIPTION,
-    tools=[google_search],
+    tools=[
+        #google_search,
+        McpToolset(
+            connection_params=StreamableHTTPConnectionParams(
+                url="http://localhost:5002/mcp"
+            )
+        )
+    ],
     before_agent_callback=log_agent_start,
     after_agent_callback=log_agent_end,
     before_tool_callback=log_before_tool,
