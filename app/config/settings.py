@@ -2,11 +2,9 @@ import os
 from pathlib import Path
 
 from dotenv import find_dotenv, load_dotenv
-from pydantic import Field, ValidationError
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from google.genai import types
-
-from app.utils.error import ConfigurationError
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -183,6 +181,101 @@ class Settings(BaseSettings):
         description="Name of the IBKR toolset to load from Toolbox server",
     )
 
+    GATEWAY_PORT: str = Field(
+        default="5055",
+        description="IBKR Gateway port",
+    )
+
+    GATEWAY_ENDPOINT: str = Field(
+        default="/v1/api",
+        description="IBKR Gateway API endpoint",
+    )
+
+    GATEWAY_TEST_ENDPOINT: str = Field(
+        default="/v1/api/iserver/account/orders",
+        description="IBKR Gateway test endpoint for health checks",
+    )
+
+    GATEWAY_INTERNAL_BASE_URL: str = Field(
+        default="https://host.docker.internal",
+        description="IBKR Gateway internal base URL (for Docker environments)",
+    )
+
+    TICKLE_INTERVAL: str = Field(
+        default="60",
+        description="Interval in seconds for tickle keep-alive requests",
+    )
+
+    TICKLE_BASE_URL: str = Field(
+        default="https://host.docker.internal:5000/v1/api",
+        description="Base URL for tickle keep-alive requests",
+    )
+
+    TICKLE_ENDPOINT: str = Field(
+        default="/tickle",
+        description="Endpoint for tickle keep-alive requests",
+    )
+
+    MCP_SERVER_HOST: str = Field(
+        default="0.0.0.0",
+        description="MCP server host address",
+    )
+
+    MCP_SERVER_BASE_URL: str = Field(
+        default="https://localhost",
+        description="MCP server base URL for external access",
+    )
+
+    MCP_SERVER_INTERNAL_BASE_URL: str = Field(
+        default="https://host.docker.internal",
+        description="MCP server internal base URL (for Docker environments)",
+    )
+
+    MCP_SERVER_PORT: str = Field(
+        default="5002",
+        description="MCP server port",
+    )
+
+    MCP_SERVER_PATH: str = Field(
+        default="/mcp",
+        description="MCP server endpoint path",
+    )
+
+    MCP_SERVER_LOG_LEVEL: str = Field(
+        default="info",
+        description="MCP server logging level",
+    )
+
+    MCP_TRANSPORT_PROTOCOL: str = Field(
+        default="streamable-http",
+        description="MCP transport protocol",
+    )
+
+    MCP_DEV_MODE: str = Field(
+        default="true",
+        description="Enable MCP development mode",
+    )
+
+    OPEN_API_SPEC_URL: str = Field(
+        default="https://api.ibkr.com/gw/api/v3/api-docs",
+        description="IBKR OpenAPI specification URL",
+    )
+
+    OPENAPI_FILE_PATH: str = Field(
+        default="openapi.json",
+        description="Local path to OpenAPI specification file",
+    )
+
+    INCLUDED_TAGS: str = Field(
+        default="Alerts,Contract,Events Calendar,Market Data,PnL,Portfolio,Session,Trades,Account Management Reports",
+        description="Comma-separated list of included OpenAPI tags",
+    )
+
+    EXCLUDED_TAGS: str = Field(
+        default="Options Chains, Orders, FA Allocation Management",
+        description="Comma-separated list of excluded OpenAPI tags",
+    )
+
     AGENT_ENGINE_ID: str = Field(
         default="",
         description=(
@@ -195,10 +288,5 @@ class Settings(BaseSettings):
         description="Enable Vertex AI Agent Engine Sessions (fully managed on GCP)",
     )
 
-try:
-    settings = Settings()
-except ValidationError as e:
-    raise ConfigurationError(
-        message="Configuration validation failed",
-        details={"pydantic_errors": e.errors()},
-    ) from e
+
+settings = Settings()

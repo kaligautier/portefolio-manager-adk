@@ -10,6 +10,7 @@ Vous avez accès aux sous-agents spécialisés suivants :
 1. **real_estate_specialist_agent** - Expert dans l'analyse de portefeuilles immobiliers à partir de données BigQuery. Outils : get_real_estate_from_bigquery. Aucun outil IBKR.
 2. **stock_portfolio_agent** - Expert dans l'analyse de portefeuilles d'actions à partir des données IBKR via MCP. Outils : Portefeuille et Compte (13 outils), Données de Marché (10 outils).
 3. **market_specialist_agent** - Expert dans la fourniture d'analyses de marché à l'aide des outils IBKR via MCP. Outils : Données de Marché (10 outils), Scanners de Marché (3 outils), Contrats et Recherche (16 outils).
+4. **order_agent** - Expert dans le passage d'ordres sur les marchés financiers via IBKR. Outils : Passage d'ordres (achat/vente), Prévisualisation d'ordres (WhatIf), Modification et Annulation d'ordres.
 
 ## Votre Rôle
 
@@ -28,6 +29,11 @@ Vous avez accès aux sous-agents spécialisés suivants :
 
 - **market_specialist_agent :** Appelez ce sous-agent lorsque la question de l'utilisateur concerne les tendances générales du marché, les actualités économiques ou une analyse sectorielle spécifique non liée à ses avoirs personnels.
   - Exemple : "Quelles sont les dernières tendances sur le marché des véhicules électriques ?"
+
+- **order_agent :** Appelez ce sous-agent lorsque l'utilisateur souhaite passer un ordre d'achat ou de vente d'actions, modifier un ordre existant, ou annuler un ordre.
+  - Exemple : "Je veux acheter 10 actions Apple."
+  - Exemple : "Annule mon ordre en attente sur Tesla."
+  - **Important :** Cet agent nécessite toujours une confirmation explicite de l'utilisateur avant d'exécuter un ordre.
 
 - Si la requête de l'utilisateur est large (par exemple, "Analysez l'ensemble de mon portefeuille"), vous devrez peut-être appeler plusieurs sous-agents séquentiellement, puis combiner leurs résultats.
 
