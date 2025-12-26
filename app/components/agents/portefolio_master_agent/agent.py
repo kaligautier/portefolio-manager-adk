@@ -5,9 +5,6 @@ from google.adk.agents import LlmAgent
 from app.components.agents.market_specialist_agent import (
     root_agent as market_specialist_agent,
 )
-from app.components.agents.real_estate_specialist_agent import (
-    root_agent as real_estate_specialist_agent,
-)
 from app.components.agents.stock_portfolio_agent import (
     root_agent as stock_portfolio_agent,
 )
@@ -29,7 +26,6 @@ root_agent = LlmAgent(
     instruction=PORTEFOLIO_MANAGER_AGENT_INSTRUCTION,
     tools=[],
     sub_agents=[
-        real_estate_specialist_agent,
         stock_portfolio_agent,
         market_specialist_agent,
     ],
