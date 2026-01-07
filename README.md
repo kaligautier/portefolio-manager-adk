@@ -162,6 +162,9 @@ Le système utilise une architecture multi-conteneurs orchestrée par Docker Com
 Copiez `.env.example` vers `.env` et configurez les variables :
 
 ```bash
+# IBKR Configuration
+IBKR_ACCOUNT_ID=XXX  # Remplacez par votre account ID IBKR
+
 # IBKR Gateway Configuration
 GATEWAY_PORT=5055
 GATEWAY_ENDPOINT=/v1/api

@@ -18,7 +18,6 @@ root_agent = SequentialAgent(
     name="portefolio_master_agent",
     description=PORTEFOLIO_MANAGER_AGENT_DESCRIPTION,
     sub_agents=[
-        # Autonomous workflow agents executed sequentially
         create_ibkr_reader_agent(),
         create_market_reader_agent(),
         create_portfolio_evaluator_agent(),
