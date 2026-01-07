@@ -2,6 +2,100 @@
 
 Gestionnaire de portefeuille multi-agents permettant de passer des ordres sur Interactive Brokers (IBKR), d'analyser son portefeuille, d'évaluer des actions et d'identifier les tendances de marché.
 
+## Le constat 
+Actuelement j'utilse le CTO Trade Republic ainsi que le CTO & PEA BoursoBank, les apis pour acheter/vendre et consulter des valeurs est pas facilement utilisable les apis sont fermés pour ce genre d'usage. 
+
+Je souhaîte craquer le sujet en passant d'un usage conversationnel à un workflow agentic automatisé capable analyser les marchés, lire la press, et passer des ordres. 
+
+Pour cela je vais avoir besoin de faire connaître mon niveau de risque et mon profil investisseur. 
+
+Je vais devoir trouver un moyen de déclencher mon workflow. 
+
+## La vision - un gestionnaire de patrimoine autonome agentique 
+
+### Workflow Autonome Quotidien
+
+Le workflow s'exécute automatiquement via l'endpoint `/run/daily` :
+
+1. **Charger la policy** → `investment_policy/default_policy.yaml`
+   - Profil investisseur (risk tolerance, horizon)
+   - Règles de gestion du risque (max drawdown, stop loss, take profit)
+   - Allocation d'actifs cible
+   - Stratégies de trading (reinforce winners, sector rotation, cut losers)
+
+2. **Lire IBKR** → `ibkr_reader_agent`
+   - Positions actuelles avec quantités et valeurs
+   - Cash disponible et buying power
+   - PnL réalisé et non réalisé
+
+3. **Lire marché** → `market_reader_agent`
+   - Prix en temps réel pour toutes les positions
+   - Volatilité 30 jours et niveau VIX
+   - Tendances de marché (bull/bear/neutral)
+   - Performance sectorielle
+
+4. **Évaluer** → `portfolio_evaluator_agent`
+   - Drawdown courant vs max autorisé
+   - Concentration par position vs limites
+   - Exposition globale vs seuils policy
+   - Positions atteignant stop loss ou take profit
+   - Drift d'allocation vs cibles
+
+5. **Décider** → `decision_maker_agent`
+   - **HOLD** : Aucune action si tout est dans les limites
+   - **REINFORCE** : Augmenter positions gagnantes (+20%)
+   - **ROTATE** : Changer allocation sectorielle
+   - **CUT_LOSERS** : Vendre positions perdantes (-10%)
+   - **REBALANCE** : Réajuster allocation cible
+
+6. **Exécuter sur IBKR** → `order_executor_agent`
+   - Lookup contract IDs (conid)
+   - Preview ordres (WhatIf)
+   - Placement ordres avec paramètres policy
+   - Capture order IDs et confirmations
+
+7. **Loguer** → Callbacks système
+   - Tous les appels d'agents sont loggés
+   - Tous les appels d'outils MCP sont tracés
+   - Audit trail complet pour conformité
+
+## Déclenchement du Workflow Autonome
+
+### Option 1: Cloud Scheduler (Recommandé - Production)
+
+Configurez Cloud Scheduler pour appeler l'endpoint `/run/daily` automatiquement :
+
+```bash
+gcloud scheduler jobs create http daily-portfolio-analysis \
+  --location=us-central1 \
+  --schedule="0 10 * * 1-5" \
+  --uri="https://your-app.run.app/run/daily" \
+  --http-method=POST \
+  --time-zone="America/New_York" \
+  --description="Daily autonomous portfolio management"
+```
+
+Cron: `0 10 * * 1-5` = Tous les jours de semaine à 10h (après ouverture des marchés US)
+
+### Option 2: Manuel (Testing)
+
+```bash
+curl -X POST https://your-app.run.app/run/daily
+```
+
+### Option 3: APScheduler (Local)
+
+
+Pour tester en local, ajoutez dans `application.py` :
+
+```python
+from apscheduler.schedulers.background import BackgroundScheduler
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(trigger_daily, 'cron', hour=10, minute=0, day_of_week='mon-fri')
+scheduler.start()
+```
+
 ## Objectifs
 
 Créer une solution agentique pour l'analyse de patrimoine et l'automatisation de l'investissement en utilisant :
@@ -36,23 +130,10 @@ uv run uvicorn app.main:app --reload --port 8085
 
 ```
 
-## Architecture Multi-Agents 
-
-```
-portfolio-manager (agent principal)
-├── Agent Analyse d'Actions
-└── Agent Marchés
-    ├── Agent Presse Financière (en développement)
-    ├── Agent Performance Historique (en développement)
-    ├── Agent Macro-économie (en développement)
-    └── Agent Régulation & Politique (en développement)
-```
-
 ### Outils des Agents
 
 **Agent Portefeuille Actions** (`stock_portfolio_agent`)
 
-*Portefeuille et Compte :*
 - `get_portfolio_accounts_portfolio_accounts_get`
 - `get_account_summary_portfolio`
 - `get_positions_portfolio`
@@ -66,8 +147,6 @@ portfolio-manager (agent principal)
 - `get_portfolio_subaccounts_portfolio_subaccounts_get`
 - `get_portfolio_subaccounts_large_portfolio_subaccounts2_g`
 - `invalidate_portfolio_cache_portfolio`
-
-*Données de Marché :*
 - `get_marketdata_snapshot_iserver_marketdata_snapshot_get`
 - `get_md_snapshot_md_snapshot_get`
 - `get_marketdata_history_iserver_marketdata_history_get`
@@ -78,10 +157,6 @@ portfolio-manager (agent principal)
 - `get_hmds_history_rules_hmds_history_rules_get`
 - `unsubscribe_market_data_iserver_marketdata_unsubscribe_p`
 - `unsubscribe_all_market_data_iserver_marketdata_unsubscri`
-
-**Agent Marchés** (`market_specialist_agent`)
-
-*Données de Marché :*
 - `get_marketdata_snapshot_iserver_marketdata_snapshot_get`
 - `get_md_snapshot_md_snapshot_get`
 - `get_marketdata_history_iserver_marketdata_history_get`
@@ -92,13 +167,9 @@ portfolio-manager (agent principal)
 - `get_hmds_history_rules_hmds_history_rules_get`
 - `unsubscribe_market_data_iserver_marketdata_unsubscribe_p`
 - `unsubscribe_all_market_data_iserver_marketdata_unsubscri`
-
-*Scanners de Marché :*
 - `get_scanner_params_iserver_scanner_params_get`
 - `run_scanner_iserver_scanner_run_post`
 - `run_hmds_scanner_hmds_scanner_post`
-
-*Contrats et Recherche (SecDef) :*
 - `search_contract_by_symbol_or_name_iserver_secdef_search_`
 - `get_contract_info_iserver_contract`
 - `get_contract_info_and_rules_iserver_contract`
@@ -157,7 +228,7 @@ GitHub → Cloud Build → Artifact Registry → Cloud Run
 - **Cloud Trace** : Télémétrie et monitoring
 - **BigQuery** : Journalisation des requêtes LLM
 
-## Configuration
+### Variables d'Environnement
 
 Créer un fichier `.env` à la racine :
 
@@ -170,6 +241,17 @@ IBKR_ACCOUNT_ID=your-account-id
 
 MODEL_NAME=gemini-2.0-flash-exp
 ```
+
+### Investment Policy
+
+La policy d'investissement est configurée dans `investment_policy/default_policy.yaml` :
+
+**Personnalisation** : Modifiez `default_policy.yaml` pour ajuster :
+- Votre profil de risque (conservative/moderate/aggressive)
+- Seuils de stop loss et take profit
+- Allocation d'actifs cible
+- Stratégies de trading activées
+- Secteurs préférés et pondérations
 
 **Télémétrie (toujours active)**
 - **Cloud Trace** : Traces OpenTelemetry des agents

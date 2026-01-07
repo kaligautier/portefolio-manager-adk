@@ -1,0 +1,31 @@
+profile:
+  horizon_years: 15
+  risk_level: aggressive
+
+risk_constraints:
+  max_drawdown_pct: 50
+  max_position_pct: 35
+  min_cash_pct: 0
+  leverage: false
+  short_selling: false
+
+allocation_bias:
+  equities: 100
+  bonds: 0
+  alternatives: 0
+  cash: dynamic
+
+decision_frequency:
+  analysis: daily
+  execution: daily
+  rebalance: continuous
+
+execution_rules:
+  max_trade_pct_portfolio: 20
+  min_trade_amount_eur: 300
+  allow_full_reallocation: true
+
+behavior:
+  volatility_tolerance: high
+  trend_following_bias: true
+  mean_reversion_bias: false
