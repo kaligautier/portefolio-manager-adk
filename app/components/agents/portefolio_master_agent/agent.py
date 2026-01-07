@@ -1,36 +1,30 @@
 import logging
 
-from google.adk.agents import LlmAgent
+from google.adk.agents import SequentialAgent
 
-from app.components.agents.market_specialist_agent import (
-    root_agent as market_specialist_agent,
-)
-from app.components.agents.stock_portfolio_agent import (
-    root_agent as stock_portfolio_agent,
-)
+from app.components.agents.ibkr_reader_agent.agent import create_agent as create_ibkr_reader_agent
+from app.components.agents.market_reader_agent.agent import create_agent as create_market_reader_agent
+from app.components.agents.portfolio_evaluator_agent.agent import create_agent as create_portfolio_evaluator_agent
+from app.components.agents.decision_maker_agent.agent import create_agent as create_decision_maker_agent
+from app.components.agents.order_executor_agent.agent import create_agent as create_order_executor_agent
 from app.components.callbacks.after_agent import log_agent_end
 from app.components.callbacks.before_agent import log_agent_start
-from app.components.callbacks.tool_callbacks import log_after_tool, log_before_tool
-from app.config.constants import (
-    PORTEFOLIO_MANAGER_AGENT_DESCRIPTION,
-    PORTEFOLIO_MANAGER_AGENT_INSTRUCTION,
-)
-from app.config.settings import settings
+from app.config.constants import PORTEFOLIO_MANAGER_AGENT_DESCRIPTION
 
 logger = logging.getLogger(__name__)
 
-root_agent = LlmAgent(
+# Create fresh instances of sub-agents using factory functions
+root_agent = SequentialAgent(
     name="portefolio_master_agent",
-    model=settings.MODEL,
     description=PORTEFOLIO_MANAGER_AGENT_DESCRIPTION,
-    instruction=PORTEFOLIO_MANAGER_AGENT_INSTRUCTION,
-    tools=[],
     sub_agents=[
-        stock_portfolio_agent,
-        market_specialist_agent,
+        # Autonomous workflow agents executed sequentially
+        create_ibkr_reader_agent(),
+        create_market_reader_agent(),
+        create_portfolio_evaluator_agent(),
+        create_decision_maker_agent(),
+        create_order_executor_agent(),
     ],
     before_agent_callback=log_agent_start,
     after_agent_callback=log_agent_end,
-    before_tool_callback=log_before_tool,
-    after_tool_callback=log_after_tool,
 )

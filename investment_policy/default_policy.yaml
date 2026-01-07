@@ -1,0 +1,128 @@
+# Investment Policy Configuration
+# Cette policy définit les règles de gestion autonome du portefeuille
+
+policy_metadata:
+  name: "Conservative Growth"
+  version: "1.0.0"
+  created_at: "2026-01-07"
+  description: "Stratégie de croissance conservative avec gestion active du risque"
+
+# Profil d'investisseur
+investor_profile:
+  risk_tolerance: "moderate"  # conservative | moderate | aggressive
+  investment_horizon: "long_term"  # short_term (< 1 an) | medium_term (1-5 ans) | long_term (> 5 ans)
+  account_id: "DUO316496"
+
+# Règles de gestion du risque
+risk_management:
+  # Drawdown maximum autorisé avant action
+  max_drawdown_percent: 15.0
+  max_drawdown_action: "cut_losers"  # hold | reduce | cut_losers
+
+  # Concentration maximum par position
+  max_position_concentration_percent: 20.0
+  max_position_action: "rebalance"  # hold | rebalance
+
+  # Exposition globale
+  max_market_exposure_percent: 90.0
+  min_cash_reserve_percent: 10.0
+
+  # Stop loss et take profit
+  stop_loss_percent: -10.0  # -10% sur une position
+  take_profit_percent: 50.0  # +50% sur une position
+
+# Règles d'allocation d'actifs
+asset_allocation:
+  target_allocation:
+    stocks: 70.0
+    bonds: 20.0
+    cash: 10.0
+
+  rebalancing_threshold_percent: 5.0  # Rééquilibrer si écart > 5%
+  rebalancing_frequency: "monthly"  # daily | weekly | monthly | quarterly
+
+# Critères de sélection des actions
+stock_selection:
+  # Secteurs préférés (pondération relative)
+  preferred_sectors:
+    - name: "Technology"
+      weight: 30.0
+    - name: "Healthcare"
+      weight: 25.0
+    - name: "Consumer Discretionary"
+      weight: 20.0
+    - name: "Financials"
+      weight: 15.0
+    - name: "Industrials"
+      weight: 10.0
+
+  # Critères quantitatifs
+  min_market_cap_usd: 10_000_000_000  # 10B minimum
+  min_avg_daily_volume: 1_000_000
+
+  # Critères de volatilité
+  max_volatility_30d: 40.0  # volatilité max 40%
+
+# Stratégies de trading
+trading_strategies:
+  # Renforcement de positions gagnantes
+  reinforce_winners:
+    enabled: true
+    trigger_gain_percent: 20.0  # Renforcer si position > +20%
+    additional_allocation_percent: 25.0  # Acheter 25% de plus
+    max_reinforce_times: 2  # Maximum 2 renforcements par position
+
+  # Rotation sectorielle
+  sector_rotation:
+    enabled: true
+    trigger: "market_trend_change"  # market_trend_change | monthly | quarterly
+    evaluation_period_days: 30
+
+  # Cut losers (vente des perdants)
+  cut_losers:
+    enabled: true
+    trigger_loss_percent: -10.0  # Vendre si position < -10%
+    sell_percentage: 100.0  # Vendre 100% de la position
+
+# Conditions de marché
+market_conditions:
+  # Seuils de volatilité (VIX)
+  vix_thresholds:
+    low: 15.0
+    medium: 25.0
+    high: 35.0
+
+  # Actions selon volatilité
+  high_volatility_action: "reduce_exposure"  # hold | reduce_exposure | increase_cash
+  low_volatility_action: "increase_exposure"  # hold | increase_exposure
+
+  # Tendance de marché
+  trend_evaluation_days: 90
+  bear_market_threshold_percent: -20.0
+  bull_market_threshold_percent: 20.0
+
+# Paramètres d'exécution
+execution_parameters:
+  order_type: "LIMIT"  # MARKET | LIMIT | STOP
+  limit_order_offset_percent: 0.5  # 0.5% au-dessus/en-dessous du prix actuel
+  time_in_force: "DAY"  # DAY | GTC | IOC
+
+  # Taille des ordres
+  min_order_size_usd: 500.0
+  max_single_order_usd: 50_000.0
+
+  # Timing
+  trading_hours_only: true
+  avoid_first_minutes: 15  # Éviter les 15 premières minutes d'ouverture
+  avoid_last_minutes: 15  # Éviter les 15 dernières minutes de clôture
+
+# Logging et notifications
+monitoring:
+  log_all_decisions: true
+  log_all_executions: true
+
+  # Notifications (à implémenter)
+  notify_on_execution: true
+  notify_on_risk_breach: true
+  notify_on_large_moves: true
+  large_move_threshold_percent: 5.0
