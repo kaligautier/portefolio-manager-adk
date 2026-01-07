@@ -241,6 +241,11 @@ class Settings(BaseSettings):
         description="MCP server endpoint path",
     )
 
+    IBKR_MCP_URL: str = Field(
+        default="http://localhost:5002/mcp",
+        description="IBKR MCP server URL (used by multiple agents)",
+    )
+
     MCP_SERVER_LOG_LEVEL: str = Field(
         default="info",
         description="MCP server logging level",

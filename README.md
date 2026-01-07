@@ -103,15 +103,163 @@ Créer une solution agentique pour l'analyse de patrimoine et l'automatisation d
 - **Protocole MCP** : intégration avec IBKR
 - **ADK Google** : Kit de Développement d'Agents
 
-## Mise en garde 
+## Architecture
 
-Le MCP IBKR demande une api gateway ou il faut se connecter avec son login/passwd depuis le navigateur. 
+### Vue d'ensemble
 
-Pour lancer l'api gateway à la main : 
+Le système utilise une architecture multi-conteneurs orchestrée par Docker Compose :
 
-`clientportal.gw % ./bin/run.sh ./root/conf.yaml``
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Portfolio Manager App                     │
+│                      (FastAPI + ADK)                         │
+│                        Port: 8080                            │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             │ HTTP
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       MCP Server                             │
+│              (FastMCP - Streamable HTTP)                     │
+│                        Port: 5002                            │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             │ HTTPS
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    IBKR API Gateway                          │
+│           (Interactive Brokers Client Portal)                │
+│                        Port: 5055                            │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                             │ HTTPS
+                             ▼
+                    ┌─────────────────┐
+                    │   IBKR Cloud    │
+                    │   (api.ibkr.com)│
+                    └─────────────────┘
+```
 
-Il y a la possibilité de lancer api gateway dans un container avec un mécanisme de raffraichissement pour éviter de se connecter à nouveau.
+### Flux de communication
+
+1. **Agents ADK** → Appel MCP via `McpToolset(url="http://localhost:5002/mcp")`
+2. **MCP Server** → Proxy les requêtes vers le Gateway IBKR (`https://host.docker.internal:5055/v1/api`)
+3. **Gateway IBKR** → Communique avec l'API cloud IBKR (`https://api.ibkr.com`)
+4. **Réponses** ← Remontent la chaîne jusqu'aux agents
+
+### Services Docker
+
+| Service | Image | Port | Description |
+|---------|-------|------|-------------|
+| `api_gateway` | `ib_mcp_api_gateway:v0.1` | 5055 | Gateway IBKR Client Portal (Java) |
+| `mcp_server` | `ib_mcp_mcp_server:v0.1` | 5002 | Serveur MCP avec FastMCP |
+| `app` | `portfolio_manager_app:v0.1` | 8080 | Application FastAPI + ADK |
+
+### Démarrage rapide
+
+#### 1. Configuration
+
+Copiez `.env.example` vers `.env` et configurez les variables :
+
+```bash
+# IBKR Gateway Configuration
+GATEWAY_PORT=5055
+GATEWAY_ENDPOINT=/v1/api
+GATEWAY_INTERNAL_BASE_URL=https://host.docker.internal
+
+# MCP Server Configuration
+MCP_SERVER_PORT=5002
+MCP_SERVER_HOST=0.0.0.0
+MCP_SERVER_BASE_URL=https://localhost
+MCP_SERVER_INTERNAL_BASE_URL=https://host.docker.internal
+MCP_SERVER_PATH=/mcp
+MCP_SERVER_LOG_LEVEL=info
+MCP_TRANSPORT_PROTOCOL=streamable-http
+MCP_DEV_MODE=true
+
+# IBKR MCP (used by multiple agents)
+IBKR_MCP_URL=http://localhost:5002/mcp
+
+# Google Cloud Platform (REQUIRED)
+GOOGLE_GENAI_USE_VERTEXAI=true
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+```
+
+#### 2. Lancer les services
+
+```bash
+# Démarrer tous les services
+docker-compose up -d
+
+# Vérifier l'état des services
+docker ps
+
+# Voir les logs
+docker-compose logs -f
+```
+
+#### 3. Authentification IBKR
+
+**Important** : Le Gateway IBKR nécessite une authentification manuelle la première fois :
+
+1. Ouvrez votre navigateur : `https://localhost:5055`
+2. Acceptez le certificat auto-signé (Avancé → Accepter le risque)
+3. Connectez-vous avec vos identifiants IBKR
+4. Une fois connecté, le Gateway reste authentifié (session persistée)
+
+Le **tickler** (script en arrière-plan) rafraîchit automatiquement la session toutes les 60 secondes pour éviter l'expiration.
+
+#### 4. Tester la connexion
+
+```bash
+# Tester le Gateway IBKR
+curl -k https://localhost:5055/v1/api/iserver/auth/status
+
+# Tester le MCP Server
+curl http://localhost:5002/mcp
+
+# Tester l'application
+curl http://localhost:8080/health
+```
+
+### Arrêter les services
+
+```bash
+# Arrêter tous les services
+docker-compose down
+
+# Arrêter et supprimer les volumes
+docker-compose down -v
+```
+
+### Troubleshooting
+
+#### Le Gateway IBKR ne démarre pas
+
+```bash
+# Voir les logs du Gateway
+docker logs api_gateway
+
+# Vérifier le healthcheck
+docker inspect api_gateway | grep Health -A 20
+```
+
+#### Le MCP Server ne peut pas se connecter au Gateway
+
+```bash
+# Vérifier la configuration réseau
+docker network inspect portefolio-manager-adk_mcp_net
+
+# Tester la connexion depuis le MCP Server
+docker exec mcp_server curl -k https://host.docker.internal:5055/v1/api/iserver/auth/status
+```
+
+#### Les agents ne reçoivent pas de données
+
+1. Vérifiez que vous êtes authentifié sur le Gateway IBKR
+2. Consultez les logs du MCP Server : `docker logs mcp_server`
+3. Vérifiez les variables d'environnement dans `.env`
 
 ## Stack 
 
@@ -121,13 +269,51 @@ Il y a la possibilité de lancer api gateway dans un container avec un mécanism
 - **Broker** : Interactive Brokers (IBKR)
 - **Base de données** : Cloud SQL (gestion de sessions)
 
-## Initialisation 
+## Initialisation
+
+### Mode Production (Docker Compose - Recommandé)
 
 ```bash
+# 1. Configurer les variables d'environnement
+cp .env.example .env
+# Éditez .env avec vos identifiants GCP et autres configurations
+
+# 2. Démarrer tous les services
+docker-compose up -d
+
+# 3. Se connecter au Gateway IBKR
+# Ouvrez https://localhost:5055 dans votre navigateur
+# Connectez-vous avec vos identifiants IBKR
+
+# 4. Vérifier que tout fonctionne
+docker ps
+curl http://localhost:8080/health
+```
+
+### Mode Développement (Local)
+
+Si vous souhaitez développer sans Docker :
+
+```bash
+# 1. Installer les dépendances
 uv sync
 
-uv run uvicorn app.main:app --reload --port 8085
+# 2. Démarrer le Gateway IBKR (dans un terminal séparé)
+cd ibkr
+./bin/run.sh ./root/conf.yaml
 
+# 3. Démarrer le MCP Server (dans un autre terminal)
+cd mcp_server
+uv run -- python fastapi_server.py
+
+# 4. Démarrer l'application (dans un autre terminal)
+uv run uvicorn app.main:app --reload --port 8080
+```
+
+**Note** : En mode développement, vous devez ajuster les URLs dans `.env` :
+```bash
+GATEWAY_INTERNAL_BASE_URL=https://localhost  # au lieu de https://host.docker.internal
+IBKR_MCP_URL=http://localhost:5002/mcp
 ```
 
 ### Outils des Agents
@@ -190,19 +376,59 @@ uv run uvicorn app.main:app --reload --port 8085
 
 ```
 portfolio-manager/
-├── app/                 # Application principale
-│   ├── agent.py         # Logique des agents
-│   ├── fast_api_app.py  # API FastAPI
-│   └── components/      # Agents spécialisés
-├── .cloudbuild/         # Pipeline CI/CD (Cloud Build)
-├── deployment/          # Infrastructure Terraform
-├── api_gateway/         # Passerele pour le MCP IBKR
-├── notebooks/           # Prototypage et évaluation
-├── tests/               # Tests (unitaires, intégration)
-└── pyproject.toml       # Configuration et dépendances
+├── app/                      # Application principale FastAPI + ADK
+│   ├── main.py               # Point d'entrée FastAPI
+│   ├── components/           # Composants
+│   │   ├── agents/           # Agents spécialisés
+│   │   │   ├── market_reader_agent/        # Lecture données marché
+│   │   │   ├── order_executor_agent/       # Exécution ordres
+│   │   │   └── agent_with_vertex_rag/      # Agent avec RAG
+│   │   └── callbacks/        # Callbacks de logging
+│   ├── config/               # Configuration et settings
+│   └── instructions/         # Templates d'instructions agents
+│
+├── api_gateway/              # Gateway IBKR Client Portal (Docker)
+│   ├── Dockerfile            # Image Docker pour le Gateway
+│   ├── conf.yaml             # Configuration du Gateway (port 5055)
+│   ├── run_gateway.sh        # Script de démarrage
+│   ├── healthcheck.sh        # Script de healthcheck
+│   └── tickler.sh            # Script de maintien de session
+│
+├── mcp_server/               # Serveur MCP FastMCP (Docker)
+│   ├── Dockerfile            # Image Docker pour le MCP Server
+│   ├── fastapi_server.py     # Serveur FastMCP sur port 5002
+│   ├── config.py             # Configuration (ports, URLs, tags)
+│   ├── routers/              # Routes MCP par catégorie
+│   │   ├── market_data.py    # Endpoints données marché
+│   │   ├── portfolio.py      # Endpoints portfolio
+│   │   ├── orders.py         # Endpoints ordres
+│   │   └── session.py        # Endpoints session/auth
+│   └── pyproject.toml        # Dépendances MCP Server
+│
+├── investment_policy/        # Politiques d'investissement
+│   └── default_policy.yaml   # Policy par défaut (risque, allocation)
+│
+├── .cloudbuild/              # Pipeline CI/CD (Cloud Build)
+├── deployment/               # Infrastructure Terraform
+├── docker-compose.yml        # Orchestration des services
+├── .env.example              # Template variables d'environnement
+└── pyproject.toml            # Configuration et dépendances app
 ```
 
 ## Commandes Principales
+
+### Docker (Production)
+
+| Commande | Description |
+|----------|-------------|
+| `docker-compose up -d` | Démarre tous les services en arrière-plan |
+| `docker-compose down` | Arrête tous les services |
+| `docker-compose logs -f` | Affiche les logs en temps réel |
+| `docker-compose ps` | Liste l'état des services |
+| `docker-compose restart <service>` | Redémarre un service spécifique |
+| `docker-compose build` | Reconstruit les images Docker |
+
+### Développement Local
 
 | Commande | Description |
 |----------|-------------|
@@ -211,6 +437,11 @@ portfolio-manager/
 | `make local-backend` | Serveur FastAPI avec hot-reload |
 | `make test` | Exécute les tests |
 | `make lint` | Vérifications de code |
+
+### Déploiement Cloud
+
+| Commande | Description |
+|----------|-------------|
 | `make deploy` | Déploie sur Cloud Run |
 | `make setup-dev-env` | Configure l'infrastructure Terraform |
 

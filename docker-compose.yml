@@ -19,29 +19,29 @@ services:
       - mcp_net
     restart: unless-stopped
 
-  # api_gateway:
-  #   container_name: api_gateway
-  #   build:
-  #     context: ./api_gateway
-  #     dockerfile: Dockerfile
-  #   image: ib_mcp_api_gateway:v0.1
-  #   ports:
-  #     - "${GATEWAY_PORT}:${GATEWAY_PORT}"
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - XX:XX
-  #   networks:
-  #     - mcp_net
-  #   volumes:
-  #     - ./api_gateway/conf.yaml:/app/api_gateway/root/conf.yaml
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "/usr/local/bin/healthcheck.sh"]
-  #     interval: 20s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 20s
-  #   restart: unless-stopped
+  api_gateway:
+    container_name: api_gateway
+    build:
+      context: ./api_gateway
+      dockerfile: Dockerfile
+    image: ib_mcp_api_gateway:v0.1
+    ports:
+      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    env_file:
+      - .env
+    environment:
+      - XX:XX
+    networks:
+      - mcp_net
+    volumes:
+      - ./api_gateway/conf.yaml:/app/api_gateway/root/conf.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/local/bin/healthcheck.sh"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
 
   mcp_server:
     container_name: mcp_server
@@ -55,9 +55,9 @@ services:
       - .env
     environment:
       - ROUTERS_PATH=/app/mcp_server/routers
-    # depends_on:
-    #   api_gateway:
-    #     condition: service_healthy
+    depends_on:
+      api_gateway:
+        condition: service_healthy
     networks:
       - mcp_net
     volumes:

@@ -2,7 +2,7 @@ from app.instructions.instructions_manager import InstructionsManager
 
 instructions_manager = InstructionsManager()
 
-VERTEX_AI_RAG_DESCRIPTION = "Utilise l'outil de récupération RAG de Vertex AI pour obtenir des réponses contextuelles du corpus RAG."
+VERTEX_AI_RAG_DESCRIPTION = "Utilise l'outil de récupération RAG de Vertex AI pour obtenir des réponses contextuelles du corpus RAG. Tu disposes aussi du mcp IBKR pour rechercher des données de marché et de portefeuille."
 VERTEX_AI_RAG_INSTRUCTION = instructions_manager.get_instructions("vertex_ai_rag/vertex_ai_rag_instruction_v1")
 
 PORTEFOLIO_MANAGER_AGENT_DESCRIPTION = "Agent principal orchestrant séquentiellement le workflow autonome de gestion de portefeuille."

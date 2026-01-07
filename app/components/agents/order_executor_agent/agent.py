@@ -22,7 +22,7 @@ def create_agent() -> LlmAgent:
         tools=[
             McpToolset(
                 connection_params=StreamableHTTPConnectionParams(
-                    url="http://localhost:5002/mcp"
+                    url=settings.IBKR_MCP_URL
                 )
             )
         ],
