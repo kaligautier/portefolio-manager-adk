@@ -181,6 +181,11 @@ class Settings(BaseSettings):
         description="Name of the IBKR toolset to load from Toolbox server",
     )
 
+    IBKR_ACCOUNT_ID: str = Field(
+        default="DUO316496",
+        description="IBKR Account ID for API operations",
+    )
+
     GATEWAY_PORT: str = Field(
         default="5055",
         description="IBKR Gateway port",
