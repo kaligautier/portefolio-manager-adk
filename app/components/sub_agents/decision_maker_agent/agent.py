@@ -4,20 +4,21 @@ from app.components.callbacks.after_agent import log_agent_end
 from app.components.callbacks.before_agent import log_agent_start
 from app.components.callbacks.tool_callbacks import log_after_tool, log_before_tool
 from app.config.constants import (
-    PORTFOLIO_EVALUATOR_AGENT_DESCRIPTION,
-    PORTFOLIO_EVALUATOR_AGENT_INSTRUCTION,
+    DECISION_MAKER_AGENT_DESCRIPTION,
+    DECISION_MAKER_AGENT_INSTRUCTION,
 )
 from app.config.settings import settings
 
 
 def create_agent() -> LlmAgent:
-    """Factory function to create a new instance of Portfolio Evaluator Agent."""
+    """Factory function to create a new instance of Decision Maker Agent."""
     return LlmAgent(
-        name="portfolio_evaluator_agent",
+        name="decision_maker_agent",
         model=settings.MODEL,
-        instruction=PORTFOLIO_EVALUATOR_AGENT_INSTRUCTION,
-        description=PORTFOLIO_EVALUATOR_AGENT_DESCRIPTION,
+        instruction=DECISION_MAKER_AGENT_INSTRUCTION,
+        description=DECISION_MAKER_AGENT_DESCRIPTION,
         tools=[],
+        output_key="decision_plan",  # Stores output in state['decision_plan']
         before_agent_callback=log_agent_start,
         after_agent_callback=log_agent_end,
         before_tool_callback=log_before_tool,

@@ -16,6 +16,9 @@ from app.utils.policy_loader import load_default_policy, get_account_id_from_pol
 
 logger = logging.getLogger(__name__)
 
+logger.info(f"✓ Root agent loaded: {root_agent.name}")
+logger.info(f"✓ Sequential workflow with {len(root_agent.sub_agents)} sub-agents")
+
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application instance."""
@@ -29,15 +32,13 @@ def create_app() -> FastAPI:
 
     app: FastAPI = get_fast_api_app(
         agents_dir=settings.AGENT_DIR,
-        web=True,  # Enable web UI
+        web=True,
         session_service_uri=session_service_uri,
     )
 
     app.title = settings.APP_NAME
     app.description = settings.APP_DESCRIPTION
     app.version = settings.APP_VERSION
-
-    # Store session service for reuse in custom endpoints
     app.state.session_service = InMemorySessionService()
 
 
@@ -54,22 +55,15 @@ def create_app() -> FastAPI:
             JSONResponse: Status of the daily run initiation
         """
         try:
-            # Load investment policy
             logger.info("Loading investment policy...")
             policy = load_default_policy()
             account_id = get_account_id_from_policy(policy)
-
-            # Message for autonomous portfolio management workflow
             daily_message = get_daily_workflow_message(policy, account_id)
-
             logger.info("Starting autonomous daily portfolio management workflow...")
-
             def run_agent():
                 try:
-                    # Reuse the session service from app.state
                     runner = Runner(app_name=settings.APP_NAME, agent=root_agent, session_service=app.state.session_service)
 
-                    # Create Content object from message string
                     user_message = genai_types.Content(
                         role="user",
                         parts=[genai_types.Part(text=daily_message)]
@@ -82,7 +76,6 @@ def create_app() -> FastAPI:
                         new_message=user_message
                     )
 
-                    # Process the event stream
                     for event in event_stream:
                         if event.content and event.content.parts:
                             logger.info(f"Event from {event.author}: {event.content.parts[0].text[:200]}...")
@@ -135,7 +128,5 @@ def create_app() -> FastAPI:
     logger.info(
         f"FastAPI application created: {settings.APP_NAME} v{settings.APP_VERSION}"
     )
-    logger.info(f"Agent directory: {settings.AGENT_DIR}")
-    logger.info("Web UI enabled: True")
 
     return app

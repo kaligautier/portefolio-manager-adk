@@ -8,19 +8,19 @@ VERTEX_AI_RAG_INSTRUCTION = instructions_manager.get_instructions("vertex_ai_rag
 PORTEFOLIO_MANAGER_AGENT_DESCRIPTION = "Agent principal orchestrant séquentiellement le workflow autonome de gestion de portefeuille."
 
 IBKR_READER_AGENT_DESCRIPTION = "Agent spécialisé dans la lecture des données de portefeuille IBKR: positions, cash, PnL."
-IBKR_READER_AGENT_INSTRUCTION = instructions_manager.get_instructions("ibkr_reader_agent/ibkr_reader_agent_instruction_v1")
+IBKR_READER_AGENT_INSTRUCTION = instructions_manager.get_instructions("ibkr_reader_agent/ibkr_reader_agent_instruction_v2")
 
 MARKET_READER_AGENT_DESCRIPTION = "Agent spécialisé dans la lecture des conditions de marché: prix, volatilité, tendances."
-MARKET_READER_AGENT_INSTRUCTION = instructions_manager.get_instructions("market_reader_agent/market_reader_agent_instruction_v1")
+MARKET_READER_AGENT_INSTRUCTION = instructions_manager.get_instructions("market_reader_agent/market_reader_agent_instruction_v2")
 
 PORTFOLIO_EVALUATOR_AGENT_DESCRIPTION = "Agent spécialisé dans l'évaluation des risques de portefeuille: drawdown, concentration, exposition."
-PORTFOLIO_EVALUATOR_AGENT_INSTRUCTION = instructions_manager.get_instructions("portfolio_evaluator_agent/portfolio_evaluator_agent_instruction_v1")
+PORTFOLIO_EVALUATOR_AGENT_INSTRUCTION = instructions_manager.get_instructions("portfolio_evaluator_agent/portfolio_evaluator_agent_instruction_v2")
 
 DECISION_MAKER_AGENT_DESCRIPTION = "Agent spécialisé dans la prise de décisions de portefeuille: hold, reinforce, rotate, cut losers."
-DECISION_MAKER_AGENT_INSTRUCTION = instructions_manager.get_instructions("decision_maker_agent/decision_maker_agent_instruction_v1")
+DECISION_MAKER_AGENT_INSTRUCTION = instructions_manager.get_instructions("decision_maker_agent/decision_maker_agent_instruction_v2")
 
 ORDER_EXECUTOR_AGENT_DESCRIPTION = "Agent spécialisé dans l'exécution autonome d'ordres IBKR avec vérifications de sécurité."
-ORDER_EXECUTOR_AGENT_INSTRUCTION = instructions_manager.get_instructions("order_executor_agent/order_executor_agent_instruction_v1")
+ORDER_EXECUTOR_AGENT_INSTRUCTION = instructions_manager.get_instructions("order_executor_agent/order_executor_agent_instruction_v2")
 
 
 def get_daily_workflow_message(policy: dict, account_id: str) -> str:
