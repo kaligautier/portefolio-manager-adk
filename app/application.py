@@ -41,73 +41,6 @@ def create_app() -> FastAPI:
     app.version = settings.APP_VERSION
     app.state.session_service = InMemorySessionService()
 
-
-    @app.post(
-        "/run/daily",
-        tags=["run", "daily"],
-        summary="Run daily autonomous agentic asset manager",
-    )
-    async def trigger_daily(background_tasks: BackgroundTasks):
-        """
-        Run daily autonomous agentic asset manager using existing /run endpoint
-
-        Returns:
-            JSONResponse: Status of the daily run initiation
-        """
-        try:
-            logger.info("Loading investment policy...")
-            policy = load_default_policy()
-            account_id = get_account_id_from_policy(policy)
-            daily_message = get_daily_workflow_message(policy, account_id)
-            logger.info("Starting autonomous daily portfolio management workflow...")
-            def run_agent():
-                try:
-                    runner = Runner(app_name=settings.APP_NAME, agent=root_agent, session_service=app.state.session_service)
-
-                    user_message = genai_types.Content(
-                        role="user",
-                        parts=[genai_types.Part(text=daily_message)]
-                    )
-
-                    logger.info("Running agent with message...")
-                    event_stream = runner.run(
-                        user_id="system",
-                        session_id="daily_analysis",
-                        new_message=user_message
-                    )
-
-                    for event in event_stream:
-                        if event.content and event.content.parts:
-                            logger.info(f"Event from {event.author}: {event.content.parts[0].text[:200]}...")
-
-                    logger.info("Daily analysis completed successfully")
-
-                except Exception as e:
-                    logger.error(f"Daily analysis failed: {e}", exc_info=True)
-
-            background_tasks.add_task(run_agent)
-
-            return JSONResponse(
-                content={
-                    "status": "started",
-                    "message": "Daily portfolio analysis initiated",
-                    "app": settings.APP_NAME,
-                    "version": settings.APP_VERSION,
-                },
-                status_code=202,
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to start daily analysis: {e}", exc_info=True)
-            return JSONResponse(
-                content={
-                    "status": "error",
-                    "message": str(e),
-                },
-                status_code=500,
-            )
-
-
     @app.get("/health", tags=["Health"], summary="Health Check")
     async def health_check():
         """
@@ -119,14 +52,14 @@ def create_app() -> FastAPI:
         return JSONResponse(
             content={
                 "status": "ok",
-                "app": settings.APP_NAME,
-                "version": settings.APP_VERSION,
+                "app": app.title,
+                "version": app.version,
             },
             status_code=200,
         )
 
     logger.info(
-        f"FastAPI application created: {settings.APP_NAME} v{settings.APP_VERSION}"
+        f"FastAPI application created: {app.title} v{app.version}"
     )
 
     return app
