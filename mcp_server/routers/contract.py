@@ -196,7 +196,8 @@ async def get_secdef_info(
     "/iserver/secdef/search",
     tags=["Contract"],
     summary="Search by Symbol or Name",
-    description="Search for contracts by symbol or company name. Returns a list of matching contracts."
+    description="Search for contracts by symbol or company name. Returns a list of matching contracts.",
+    name="search_contract_by_symbol_or_name"
 )
 async def search_contract_by_symbol_or_name(
     symbol: str = Query(..., description="The symbol or company name to search for."),
