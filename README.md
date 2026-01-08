@@ -80,7 +80,21 @@ Cron: `0 10 * * 1-5` = Tous les jours de semaine à 10h (après ouverture des ma
 ### Option 2: Manuel (Testing)
 
 ```bash
+# Workflow autonome
 curl -X POST https://your-app.run.app/run/daily
+
+# Conversation interactive avec l'agent
+curl -X POST https://your-app.run.app/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_name": "portefolio_master_agent",
+    "user_id": "user123",
+    "session_id": "session456",
+    "new_message": {
+      "role": "user",
+      "parts": [{"text": "Analyse mon portefeuille et recommande des actions"}]
+    }
+  }'
 ```
 
 ### Option 3: APScheduler (Local)
@@ -94,6 +108,63 @@ from apscheduler.schedulers.background import BackgroundScheduler
 scheduler = BackgroundScheduler()
 scheduler.add_job(trigger_daily, 'cron', hour=10, minute=0, day_of_week='mon-fri')
 scheduler.start()
+```
+
+## Routes API et Interaction avec les Agents
+
+L'application expose plusieurs routes pour interagir avec les agents. Voir [docs/API_ROUTES.md](docs/API_ROUTES.md) pour la documentation complète.
+
+### Routes disponibles
+
+| Route | Méthode | Description |
+|-------|---------|-------------|
+| `/run` | POST | Conversation synchrone avec un agent |
+| `/run/sse` | POST | Conversation avec streaming (Server-Sent Events) |
+| `/run/daily` | POST | Déclenche le workflow autonome quotidien |
+| `/health` | GET | Health check |
+| `/docs` | GET | Documentation Swagger UI |
+
+### Agents disponibles
+
+**Agents root (accessibles via `/run` et `/run/sse`):**
+- `portefolio_master_agent` - Orchestrateur du workflow autonome (5 sous-agents)
+- `agent_with_vertex_rag` - Agent avec RAG Vertex AI
+
+**Sous-agents (automatiquement exécutés par `portefolio_master_agent`):**
+- `ibkr_reader_agent`, `market_reader_agent`, `portfolio_evaluator_agent`, `decision_maker_agent`, `order_executor_agent`
+
+### Exemples d'utilisation
+
+```bash
+# 1. Conversation interactive
+curl -X POST http://localhost:8080/run \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_name": "portefolio_master_agent",
+    "user_id": "trader1",
+    "session_id": "session123",
+    "new_message": {
+      "role": "user",
+      "parts": [{"text": "Quelle est la valeur totale de mon portefeuille?"}]
+    }
+  }'
+
+# 2. Streaming avec SSE
+curl -X POST http://localhost:8080/run/sse \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "app_name": "portefolio_master_agent",
+    "user_id": "trader1",
+    "session_id": "session123",
+    "new_message": {
+      "role": "user",
+      "parts": [{"text": "Analyse complète avec recommandations"}]
+    }
+  }'
+
+# 3. Workflow autonome
+curl -X POST http://localhost:8080/run/daily
 ```
 
 ## Objectifs
@@ -236,7 +307,62 @@ docker-compose down
 docker-compose down -v
 ```
 
+## Utilisation de l'interface ADK Web
+
+### Lancer l'interface web ADK
+
+L'application expose automatiquement l'interface ADK Web pour interagir avec les agents:
+
+```bash
+# Depuis le répertoire racine
+adk web app/components/agents
+
+# Ou via Docker Compose (déjà configuré)
+docker-compose up -d
+
+# Accéder à l'interface
+# http://localhost:8080 (ou le port configuré dans .env)
+```
+
+**Agents disponibles dans l'interface ADK:**
+- `portefolio_master_agent` - Orchestrateur du workflow autonome (5 sous-agents)
+- `agent_with_vertex_rag` - Agent avec RAG Vertex AI
+
+**Note importante:** Les sous-agents (`ibkr_reader_agent`, `market_reader_agent`, etc.) ne sont **pas** accessibles directement via l'interface ADK. Ils sont automatiquement exécutés dans l'ordre par `portefolio_master_agent`.
+
 ### Troubleshooting
+
+#### Erreur "No root_agent found for 'X'"
+
+Si vous voyez cette erreur, cela signifie qu'ADK ne trouve pas l'agent demandé.
+
+**Cause la plus fréquente:** Vous essayez d'accéder à un sous-agent directement (exemple: `ibkr_reader_agent`, `market_reader_agent`, `decision_maker_agent`, etc.). Ces agents ne sont **pas** accessibles directement car ils n'exportent pas de `root_agent`.
+
+**Solution:**
+1. Utilisez `portefolio_master_agent` comme `app_name` dans vos requêtes API
+2. Les sous-agents seront automatiquement exécutés dans l'ordre par l'orchestrateur
+3. Pour accéder aux routes ADK (`/run`, `/run/sse`), utilisez:
+   ```bash
+   curl -X POST http://localhost:8080/run \
+     -H "Content-Type: application/json" \
+     -d '{
+       "app_name": "portefolio_master_agent",
+       "user_id": "user123",
+       "session_id": "session456",
+       "new_message": {
+         "role": "user",
+         "parts": [{"text": "Votre message ici"}]
+       }
+     }'
+   ```
+
+**Agents valides (exportent root_agent):**
+- `portefolio_master_agent` - Orchestrateur principal du workflow
+- `agent_with_vertex_rag` - Agent avec RAG Vertex AI
+
+**Sous-agents (NON accessibles directement):**
+- `ibkr_reader_agent`, `market_reader_agent`, `portfolio_evaluator_agent`, `decision_maker_agent`, `order_executor_agent`
+- Ces agents sont appelés automatiquement par `portefolio_master_agent`
 
 #### Le Gateway IBKR ne démarre pas
 

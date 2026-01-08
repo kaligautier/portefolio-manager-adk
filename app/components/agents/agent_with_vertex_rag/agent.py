@@ -17,6 +17,8 @@ from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnecti
 from app.config.constants import VERTEX_AI_RAG_DESCRIPTION, VERTEX_AI_RAG_INSTRUCTION
 from app.config.settings import settings
 
+from app.components.tools.custom.ibkr_account_tool import get_my_account_id
+
 logger = logging.getLogger(__name__)
 
 root_agent = LlmAgent(

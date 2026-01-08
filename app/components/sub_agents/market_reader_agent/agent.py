@@ -7,19 +7,20 @@ from app.components.callbacks.before_agent import log_agent_start
 from app.components.callbacks.tool_callbacks import log_after_tool, log_before_tool
 from app.components.tools.custom.ibkr_account_tool import get_my_account_id
 from app.config.constants import (
-    ORDER_EXECUTOR_AGENT_DESCRIPTION,
-    ORDER_EXECUTOR_AGENT_INSTRUCTION,
+    MARKET_READER_AGENT_DESCRIPTION,
+    MARKET_READER_AGENT_INSTRUCTION,
 )
 from app.config.settings import settings
 
 
 def create_agent() -> LlmAgent:
-    """Factory function to create a new instance of Order Executor Agent."""
+    """Factory function to create a new instance of Market Reader Agent."""
     return LlmAgent(
-        name="order_executor_agent",
+        name="market_reader_agent",
         model=settings.MODEL,
-        instruction=ORDER_EXECUTOR_AGENT_INSTRUCTION,
-        description=ORDER_EXECUTOR_AGENT_DESCRIPTION,
+        instruction=MARKET_READER_AGENT_INSTRUCTION,
+        description=MARKET_READER_AGENT_DESCRIPTION,
+        output_key="market_analysis",
         tools=[
             get_my_account_id,
             McpToolset(
