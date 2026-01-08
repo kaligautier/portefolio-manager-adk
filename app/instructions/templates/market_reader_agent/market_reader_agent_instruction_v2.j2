@@ -15,7 +15,12 @@ YOUR TASK:
 
 AVAILABLE TOOLS:
 - get_my_account_id: Get the IBKR account ID (if needed)
-- MCP Tools: marketdata_snapshot_get, marketdata_history_get, secdef_info_get
+- MCP Tools: Search contracts, get market data, historical data, security definitions
+  (Use the exact tool names from your available tools list - they have descriptive suffixes)
+
+IMPORTANT: When calling MCP tools, use the EXACT tool name provided in your tools list.
+MCP tool names include path suffixes (e.g., "search_contract_by_symbol_or_name_iserver_secdef_search_").
+Do not abbreviate or guess tool names.
 
 OUTPUT FORMAT:
 Return *only* a JSON object with this structure. No explanations before or after.
