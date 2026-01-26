@@ -12,16 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Service account email for the Portfolio Manager application
-# Note: This service account must be created manually first with:
-# cd iac && ./setup-iam.sh YOUR_PROJECT_ID
+# Get project information
+data "google_project" "project" {
+  project_id = var.project_id
+}
 
-locals {
-  app_service_account_email = "porte-folio-manager-sa@${var.project_id}.iam.gserviceaccount.com"
+# Service account for the Portfolio Manager application
+resource "google_service_account" "portfolio_manager" {
+  account_id   = "porte-folio-manager-sa"
+  display_name = "Portfolio Manager Service Account"
+  description  = "Service account for Portfolio Manager Cloud Run service"
+  project      = var.project_id
+}
+
+# Grant Cloud Build service account permission to deploy Cloud Run services
+resource "google_project_iam_member" "cloudbuild_run_admin" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
+
+  depends_on = [google_project_service.required_apis]
+}
+
+# Grant Cloud Build permission to act as the app service account
+resource "google_service_account_iam_member" "cloudbuild_sa_user" {
+  service_account_id = google_service_account.portfolio_manager.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
 }
 
 # Output the service account email for reference
 output "service_account_email" {
-  value       = local.app_service_account_email
+  value       = google_service_account.portfolio_manager.email
   description = "Email of the Portfolio Manager service account"
 }
