@@ -14,7 +14,34 @@ steps:
         chmod +x init.sh
         ./init.sh ${PROJECT_ID}
 
-  # Build Docker image     
+  # Enable required APIs
+  - id: 'enable-apis'
+    name: gcr.io/cloud-builders/gcloud
+    entrypoint: sh
+    args:
+      - '-c'
+      - |
+        echo "Enabling Service Usage API (required for Terraform)..."
+        gcloud services enable serviceusage.googleapis.com --project=$PROJECT_ID
+
+        echo "Waiting for Service Usage API to propagate..."
+        for i in {1..12}; do
+          if gcloud services list --enabled --project=$PROJECT_ID --filter="name:serviceusage.googleapis.com" --format="value(name)" | grep -q serviceusage; then
+            echo "Service Usage API is active"
+            break
+          fi
+          echo "Waiting... ($i/12)"
+          sleep 10
+        done
+
+        echo "Enabling other required APIs..."
+        gcloud services enable artifactregistry.googleapis.com --project=$PROJECT_ID
+        gcloud services enable run.googleapis.com --project=$PROJECT_ID
+        gcloud services enable cloudbuild.googleapis.com --project=$PROJECT_ID
+        echo "All APIs enabled successfully"
+    waitFor: ['project-init']
+
+  # Build Docker image
   - id: 'docker-build'
     name: 'gcr.io/cloud-builders/docker'
     args:
@@ -24,6 +51,7 @@ steps:
       - '--build-arg'
       - 'COMMIT_SHA=$SHORT_SHA'
       - '.'
+    waitFor: ['enable-apis']
 
   # Terraform init
   - id: 'terraform-init'
@@ -34,6 +62,7 @@ steps:
       - |
         cd iac
         terraform init -input=false -no-color -upgrade -backend-config=init/backend.tfvars
+    waitFor: ['enable-apis']
 
   # Terraform plan
   - id: 'terraform-plan'
@@ -62,7 +91,7 @@ steps:
       - 'push'
       - '--all-tags'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/portfolio-manager'
-    waitFor: ['docker-build']
+    waitFor: ['docker-build', 'terraform-apply']
 
   # Deploy to Cloud Run
   - id: 'cloud-run-deploy'

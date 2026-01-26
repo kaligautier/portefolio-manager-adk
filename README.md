@@ -13,6 +13,8 @@ Je vais devoir trouver un moyen de déclencher mon workflow.
 
 ## La vision - un gestionnaire de patrimoine autonome agentique 
 
+
+
 ### Workflow Autonome Quotidien
 
 Le workflow s'exécute automatiquement via l'endpoint `/run/daily` :
